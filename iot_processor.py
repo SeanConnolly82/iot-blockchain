@@ -3,8 +3,7 @@ import hashlib
 import cbor
 
 from sawtooth_sdk.processor.core import TransactionProcessor
-from sawtooth_xo.processor.handler import XoTransactionHandler
-
+from sawtooth_sdk.processor.handler import TransactionHandler
 
 FAMILY_NAME = 'IoT-data'
 
@@ -84,13 +83,16 @@ class IoTTransactionHandler(TransactionHandler):
         context.set_state({address: state_data})
 
     def _get_state():
+        """Handled by client
+        """
         pass
 
 def main():
     """Main function
     """
     processor = TransactionProcessor(url='tcp://127.0.0.1:4004')
-    handler = IoTTransactionHandler()
+    ns_prefix = _hash(FAMILY_NAME.encode('utf-8'))[0:6]
+    handler = IoTTransactionHandler(ns_prefix)
     processor.add_handler(handler)
     processor.start()
 

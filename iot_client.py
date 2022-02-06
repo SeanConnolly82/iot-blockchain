@@ -1,11 +1,12 @@
 import hashlib
+import random
 
 import cbor
 import requests
 from iot_processor import FAMILY_NAME
 
 from sawtooth_signing import ParseError
-from sawtooth_signing import Secp256k1PrivateKey
+from sawtooth_signing.secp256k1 import Secp256k1PrivateKey
 from sawtooth_signing import CryptoFactory
 from sawtooth_signing import create_context
 
@@ -17,6 +18,8 @@ from sawtooth_sdk.protobuf.batch_pb2 import Batch
 
 # Test adding more transactions to a batch
 FAMILY_NAME = 'IoT-data'
+
+BASE_URL = 'http://localhost:8008'
 
 def _hash(data):
     '''Compute the SHA-512 hash and return the result as hex characters.'''
@@ -38,15 +41,15 @@ class IoTClient():
     def __init__(self, base_url, device_id, key_file=None):
         self.base_url = base_url
 
-        if key_file is None:
-            self._signer = None
-            return
+        # if key_file is None:
+        #     self._signer = None
+        #     return
         
-        try:
-            with open(key_file) as key_fd:
-                private_key_str = key_fd.read().strip()
-        except OSError as err:
-            raise Exception('Insert message')
+        # try:
+        #     with open(key_file) as key_fd:
+        #         private_key_str = key_fd.read().strip()
+        # except OSError as err:
+        #     raise Exception('Insert message')
 
         try:
             #private_key = Secp256k1PrivateKey.from_hex(private_key_str)
@@ -76,7 +79,7 @@ def get(self):
 def _send_to_rest_api(self, method, suffix, data=None):
     """
     """
-    url = 'http://localhost:8008'
+    url = '{}{}'.format(BASE_URL, suffix)
     headers={'Content-Type': 'application/octet-stream'}
 
     try:
@@ -104,12 +107,12 @@ def _create_txn_list(self, payload):
     txn_header = TransactionHeader(
         family_name=FAMILY_NAME,
         family_version='1.0',
-        inputs=[],
-        outputs=[],
+        inputs=[self._address],
+        outputs=[self._address],
         signer_public_key=self._public_key,
         batcher_public_key=self._public_key,
         dependencies=[],
-        payload_sha512=hashlib.sha512(payload).hexdigest()
+        payload_sha512=hashlib.sha512(payload).hexdigest(),
         nonce=random.random().hex().encode()
     ).SerializeToString()
 
@@ -131,7 +134,7 @@ def _create_batch_list(self, payload):
 
     batch = Batch(
         header=batch_header,
-        header_signature=self.signer.sign(batch_header),
+        header_signature=self._signer.sign(batch_header),
         transactions=txns
     )
     return BatchList(batches=[batch]).SerializeToString()

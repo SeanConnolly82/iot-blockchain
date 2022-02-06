@@ -14,7 +14,7 @@ class Sensor():
 
     def read_value(self):
         self.payload['timestamp'] = self._get_timestamp()
-        self.value['value'] = self._get_reading()
+        self.payload['value'] = self._get_reading()
 
     def _get_reading():
         """ Placeholer for reading physical device
