@@ -5,14 +5,25 @@ import cbor
 from sawtooth_sdk.processor.core import TransactionProcessor
 from sawtooth_sdk.processor.handler import TransactionHandler
 
+
+VALIDATOR_ADDRESS = 'tcp://127.0.0.1:4004'
 FAMILY_NAME = 'IoT-data'
+VERSION = '1.0'
 
 MIN_TEMP = -10
 MAX_TEMP = 35
 
+
 def _hash(data):
-    '''Compute the SHA-512 hash and return the result as hex characters.'''
+    """ Compute the SHA-512 hash and return the result as hex characters.
+
+    Args:
+        data: The data to be hashed.
+    Returns:
+        Hex characters of hashed data.
+    """
     return hashlib.sha512(data).hexdigest()
+
 
 def _get_address(device_id, from_key):
     """
@@ -21,6 +32,7 @@ def _get_address(device_id, from_key):
     return _hash(FAMILY_NAME.encode('utf-8'))[:6] + \
                 _hash(device_id.encode('utf-8'))[:4] + \
                 _hash(from_key.encode('utf-8'))[:60]
+
 
 class IoTTransactionHandler(TransactionHandler):
     
@@ -33,7 +45,7 @@ class IoTTransactionHandler(TransactionHandler):
 
     @property
     def family_versions(self):
-        return ['1.0']
+        return [VERSION]
 
     @property
     def namespaces(self):
@@ -50,15 +62,23 @@ class IoTTransactionHandler(TransactionHandler):
         from_key = header.signer_public_key
 
         timestamp, device_id, device_type, value = self._decode_unpack_txn(transaction.payload)
+
+        if timestamp or value is None:
+            raise ValueError
+
         if not self._validate_txn(device_type, value):
-            pass
+            raise ValueError
 
         address = _get_address(device_id, from_key)
         self._set_state(address, transaction.payload, context)
     
-
     def _decode_unpack_txn(self, payload):
-        """
+        """ Decodes the CBOR encoded payload and unpacks the contents.
+
+        Args:
+            payload: The transaction payload.
+        Returns:
+            timestamp, device_id, device_type, value
         """
         try:
             content = cbor.loads(payload)
@@ -70,31 +90,41 @@ class IoTTransactionHandler(TransactionHandler):
         value = content['value']
         return timestamp, device_id, device_type, value
 
-
     def _validate_txn(self, device_type, value):
-        """
-        """
-        pass
-        
+        """ Validate transaction values are within expected range.
 
+        Args:
+            device_type: The type of device from the transaction payload.
+            value: The value of the device fron the transaction payload.
+        Returns:
+            True or False if value is valid or not valid
+        """
+        if device_type == 'temp':
+            return MIN_TEMP <= value <= MAX_TEMP
+        if device_type == 'humidity':
+            pass
+        
     def _set_state(self, address, state_data, context):
         """
+        Args:
+            address:
+            state_data:
+            context:
+
+        Does this return anything?
         """
         context.set_state({address: state_data})
 
-    def _get_state():
-        """Handled by client
-        """
-        pass
 
 def main():
-    """Main function
+    """ Main function
     """
-    processor = TransactionProcessor(url='tcp://127.0.0.1:4004')
+    processor = TransactionProcessor(VALIDATOR_ADDRESS)
     ns_prefix = _hash(FAMILY_NAME.encode('utf-8'))[0:6]
     handler = IoTTransactionHandler(ns_prefix)
     processor.add_handler(handler)
     processor.start()
+
 
 if __name__ == "__main__":
     main()
