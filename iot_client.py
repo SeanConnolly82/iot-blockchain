@@ -3,7 +3,8 @@ import random
 
 import cbor
 import requests
-from iot_processor import FAMILY_NAME
+
+import base_logger
 
 from sawtooth_signing import ParseError
 from sawtooth_signing.secp256k1 import Secp256k1PrivateKey
@@ -19,7 +20,7 @@ from sawtooth_sdk.protobuf.batch_pb2 import Batch
 
 # Test adding more transactions to a batch
 FAMILY_NAME = 'IoT-data'
-BASE_URL = 'http://localhost:8008'
+LOGGER = base_logger.get_logger(__name__)
 
 
 def _hash(data):
@@ -33,30 +34,32 @@ def _hash(data):
     return hashlib.sha512(data).hexdigest()
 
 
-def _get_address(device_id, from_key):
-    """
-    Look into namespace becuase there were some interesting points in the docs.
+def _get_address(device_id, public_key):
+    """ Returns namespace address for storing state on merkle tree. Derived
+    from hashes of family name, device_id, and public key.
+
     Args:
-        device_id:
-        from_key:
+        device_id: The IoT devive id.
+        public_key: Public key of the IoT client.
     Returns:
-        A 70 ...(explain)
+        A 70 character address of the merkle namespace.
     """
     return _hash(FAMILY_NAME.encode('utf-8'))[:6] + \
-                _hash(device_id.encode('utf-8'))[:4] + \
-                _hash(from_key.encode('utf-8'))[:60]
+        _hash(device_id.encode('utf-8'))[:4] + \
+        _hash(public_key.encode('utf-8'))[:60]
 
 
 class IoTClient():
     """ Send IoT device transactions to Transaction Processor.
     """
+
     def __init__(self, base_url, device_id, key_file=None):
         self.base_url = base_url
 
         # if key_file is None:
         #     self._signer = None
         #     return
-        
+
         # try:
         #     with open(key_file) as key_fd:
         #         private_key_str = key_fd.read().strip()
@@ -68,8 +71,9 @@ class IoTClient():
             private_key = create_context('secp256k1').new_random_private_key()
         except ParseError as err:
             raise Exception('Insert message')
-        
-        self._signer = CryptoFactory(create_context('secp256k1')).new_signer(private_key)
+
+        self._signer = CryptoFactory(create_context(
+            'secp256k1')).new_signer(private_key)
         self._public_key = self._signer.get_public_key().as_hex()
         self._address = _get_address(device_id, self._public_key)
 
@@ -82,43 +86,50 @@ class IoTClient():
             The API response text.
         """
         if not isinstance(payload, dict):
-            raise TypeError('Give me some dict')
+            raise TypeError(
+                'Expected a dictionary but instead got a {}'.format(type(payload)))
         payload_bytes = cbor.dumps(payload)
         batches = self._create_batch_list(payload_bytes)
         return self._send_to_rest_api('POST', 'batches', batches)
 
     def get(self):
+        """ 
         """
-        """
-        return self._send_to_rest_api('get', 'batches')
+        return self._send_to_rest_api('GET', 'batches')
 
     def _send_to_rest_api(self, method, suffix, data=None):
         """ Sends a Post or Get request to the Sawtooth REST API.
 
         Args:
             method: HTTP method, POST or GET
-            suffix: Extension to base url
+            suffix: Endpoint to be added to base url
             data: Batch list
         Returns:
             The API response text.
         """
-        url = '{}{}'.format(BASE_URL, suffix)
-        headers={'Content-Type': 'application/octet-stream'}
+        url = '{}/{}'.format(self.base_url, suffix)
+        headers = {'Content-Type': 'application/octet-stream'}
 
         try:
-            if method == 'post':
+            if method == 'POST':
                 result = requests.post(url, headers=headers, data=data)
-            elif method == 'get':
+            elif method == 'GET':
                 result = requests.get(url, headers=headers)
 
             if not result.ok:
+                LOGGER.error('Transaction received a {} status code'.format(
+                    result.status_code))
                 raise Exception("Error {}: {}".format(
                     result.status_code, result.reason))
+            else:
+                LOGGER.info('Transaction received a {} status code'.format(
+                    result.status_code))
 
         except requests.ConnectionError as err:
+            LOGGER.error('Connection error {}'.format(err))
             raise Exception(
                 'Failed to connect to {}: {}'.format(url, str(err)))
-        except BaseException as err:
+        except Exception as err:
             raise Exception(err)
 
         return result.text

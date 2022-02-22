@@ -1,7 +1,7 @@
 import logging
 from colorlog import ColoredFormatter
 
-def get_console_handler():
+def _get_console_handler():
     """ Set up a formatted console handler for the logger.
 
     Returns:
@@ -20,7 +20,7 @@ def get_console_handler():
     return console_handler
 
 
-def get_file_handler():
+def _get_file_handler():
     """ Set up a formatted file handler for the logger.
 
     Returns:
@@ -29,7 +29,7 @@ def get_file_handler():
     file_handler = logging.FileHandler('iot-log.log')
     file_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(file_formatter)
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(logging.INFO)
     return file_handler
 
 
@@ -39,10 +39,10 @@ def get_logger(name):
     Returns:
         logger: A logging logger object.
     """
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(name)
-    logger.addHandler(get_file_handler())
-    logger.addHandler(get_console_handler())
+    logger.addHandler(_get_file_handler())
+    logger.addHandler(_get_console_handler())
     logger.propagate = False
     return logger
 
