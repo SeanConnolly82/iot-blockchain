@@ -64,13 +64,15 @@ class IoTClient():
         #     with open(key_file) as key_fd:
         #         private_key_str = key_fd.read().strip()
         # except OSError as err:
-        #     raise Exception('Insert message')
+        #     LOGGER.error('Unable to get private key from file. {}'.format(err))
+        #     raise Exception(err)
 
         try:
             #private_key = Secp256k1PrivateKey.from_hex(private_key_str)
             private_key = create_context('secp256k1').new_random_private_key()
         except ParseError as err:
-            raise Exception('Insert message')
+            LOGGER.error('Unable to parse private key. {}'.format(err))
+            raise Exception(err)
 
         self._signer = CryptoFactory(create_context(
             'secp256k1')).new_signer(private_key)
@@ -86,19 +88,20 @@ class IoTClient():
             The API response text.
         """
         if not isinstance(payload, dict):
-            raise TypeError(
-                'Expected a dictionary but instead got a {}'.format(type(payload)))
+            LOGGER.error('Expected a dictionary but instead got a {}'.format(type(payload)))
+            raise TypeError
+                
         payload_bytes = cbor.dumps(payload)
         batches = self._create_batch_list(payload_bytes)
         return self._send_to_rest_api('POST', 'batches', batches)
 
     def get(self):
-        """ 
+        """ Gets current state payload from REST API.
         """
         return self._send_to_rest_api('GET', 'batches')
 
     def _send_to_rest_api(self, method, suffix, data=None):
-        """ Sends a Post or Get request to the Sawtooth REST API.
+        """ Sends a POST or GET HTTP request to the Sawtooth REST API.
 
         Args:
             method: HTTP method, POST or GET
@@ -126,9 +129,8 @@ class IoTClient():
                     result.status_code))
 
         except requests.ConnectionError as err:
-            LOGGER.error('Connection error {}'.format(err))
-            raise Exception(
-                'Failed to connect to {}: {}'.format(url, str(err)))
+            LOGGER.error('Failed to connect to {}: {}'.format(url, str(err)))
+            raise Exception(err)
         except Exception as err:
             raise Exception(err)
 

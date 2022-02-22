@@ -29,13 +29,19 @@ def _hash(data):
     return hashlib.sha512(data).hexdigest()
 
 
-def _get_address(device_id, from_key):
-    """
-    Look into namespace becuase there were some interesting points in the docs.
+def _get_address(device_id, public_key):
+    """ Returns namespace address for storing state on merkle tree. Derived
+    from hashes of family name, device_id, and public key.
+
+    Args:
+        device_id: The IoT devive id.
+        public_key: Public key of the IoT client.
+    Returns:
+        A 70 character address of the merkle namespace.
     """
     return _hash(FAMILY_NAME.encode('utf-8'))[:6] + \
         _hash(device_id.encode('utf-8'))[:4] + \
-        _hash(from_key.encode('utf-8'))[:60]
+        _hash(public_key.encode('utf-8'))[:60]
 
 
 class IoTTransactionHandler(TransactionHandler):
@@ -119,10 +125,11 @@ class IoTTransactionHandler(TransactionHandler):
             pass
 
     def _set_state(self, address, state_data, context):
-        """
+        """ Stores state on the blockchain.
+
         Args:
-            address:
-            state_data:
+            address: The merkle tree namespace to store state.
+            state_data: The data that will be stroed in state.
             context:
         """
         context.set_state({address: state_data})

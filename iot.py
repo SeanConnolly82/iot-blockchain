@@ -54,9 +54,10 @@ def do_get(device):
     Args:
         device: An IoT device object.
     """
-    key_file = ''#_get_private_keyfile()
-    client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
-    return client.get()
+    pass
+    # key_file = ''#_get_private_keyfile()
+    # client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
+    # return client.get()
 
 
 def create_arg_parser():
@@ -73,8 +74,8 @@ def create_arg_parser():
         'device_id', help='The ID of the IoT device to post')
     parser_post.add_argument('device_type', choices=[
                              'temp', 'humidity'], help='The type of IoT device')
-    parser_post.add_argument(
-        'interval', type=float, help='The interval in seconds for transactions sent from the IoT device')
+    parser_post.add_argument('-i',
+        '--interval', type=float, help='The interval in seconds for transactions sent from the IoT device')
     parser_get = subparser.add_parser('get')
     parser_get.add_argument(
         'device_id', help='The ID of the IoT device to read')
@@ -88,7 +89,7 @@ def main():
     try:
         if args.action == 'get':
             device = Sensor(args.device_id)
-            #do_get(sensor)
+            do_get(device)
         elif args.action == 'post':
             device = Sensor('abc', 'temp')
             LOGGER.info('Created a {} device with id {}'.format(device.payload['device_type'], device.payload['device_id']))
