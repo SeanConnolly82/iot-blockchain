@@ -71,6 +71,9 @@ class IoTClient():
 
     def get(self):
         """ Gets current state payload from REST API.
+
+        returns:
+            The API response text.
         """
         return self._send_to_rest_api('GET', 'state')
 

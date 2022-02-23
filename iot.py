@@ -10,7 +10,7 @@ from sensor import Sensor
 from iot_client import IoTClient
 
 
-DEFAULT_URL = 'http://192.168.0.221:8008'
+DEFAULT_URL = 'http://192.168.0.164:8008'
 
 LOGGER = base_logger.get_logger(__name__)
 

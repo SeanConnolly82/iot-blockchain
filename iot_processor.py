@@ -41,7 +41,7 @@ class IoTTransactionHandler(TransactionHandler):
 
         args:
             transaction: An IoT-data transaction.
-            context: An interface for setting, getting and deleting a validator state.
+            context: An interface for setting, getting, and deleting a validator state.
 
         """
         header = transaction.header
