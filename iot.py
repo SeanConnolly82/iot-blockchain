@@ -48,16 +48,16 @@ def do_post(device, interval):
 
 
 def do_get(device):
-    """ Instatiates an IoTClient object, and gets the current blockchain committed
+    """ Instatiates an IoTClient object, and gets the current blockchain state
      value for an IoT device.
 
     Args:
         device: An IoT device object.
     """
-    pass
-    # key_file = ''#_get_private_keyfile()
-    # client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
-    # return client.get()
+    key_file = ''#_get_private_keyfile()
+    client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
+    response = client.get()
+    print(response)
 
 
 def create_arg_parser():
@@ -91,7 +91,7 @@ def main():
             device = Sensor(args.device_id)
             do_get(device)
         elif args.action == 'post':
-            device = Sensor('abc', 'temp')
+            device = Sensor(args.device_id, args.device_type)
             LOGGER.info('Created a {} device with id {}'.format(device.payload['device_type'], device.payload['device_id']))
             do_post(device, args.interval)
     except KeyboardInterrupt:

@@ -1,11 +1,12 @@
-import hashlib
 import time
-
 import cbor
+
 import base_logger
+import helper_functions as hf
 
 from sawtooth_sdk.processor.core import TransactionProcessor
 from sawtooth_sdk.processor.handler import TransactionHandler
+from sawtooth_sdk.processor.exceptions import InvalidTransaction
 
 
 VALIDATOR_ADDRESS = 'tcp://192.168.0.221:4004'
@@ -16,32 +17,6 @@ MIN_TEMP = -10
 MAX_TEMP = 35
 
 LOGGER = base_logger.get_logger(__name__)
-
-
-def _hash(data):
-    """ Compute the SHA-512 hash and return the result as hex characters.
-
-    Args:
-        data: The data to be hashed.
-    Returns:
-        Hex characters of hashed data.
-    """
-    return hashlib.sha512(data).hexdigest()
-
-
-def _get_address(device_id, public_key):
-    """ Returns namespace address for storing state on merkle tree. Derived
-    from hashes of family name, device_id, and public key.
-
-    Args:
-        device_id: The IoT devive id.
-        public_key: Public key of the IoT client.
-    Returns:
-        A 70 character address of the merkle namespace.
-    """
-    return _hash(FAMILY_NAME.encode('utf-8'))[:6] + \
-        _hash(device_id.encode('utf-8'))[:4] + \
-        _hash(public_key.encode('utf-8'))[:60]
 
 
 class IoTTransactionHandler(TransactionHandler):
@@ -62,15 +37,11 @@ class IoTTransactionHandler(TransactionHandler):
         return [self._namespace_prefix]
 
     def apply(self, transaction, context):
-        """ Explain apply function
+        """ Apply transaction.
 
         args:
-            transaction: An IoT-data transaction
-            context:
-
-        This function will take a transaction and save it to state.
-        There will be some validation rules applied.
-        Use https://github.com/hyperledger/sawtooth-sdk-python/blob/main/examples/intkey_python/sawtooth_intkey/processor/handler.py for ref
+            transaction: An IoT-data transaction.
+            context: An interface for setting, getting and deleting a validator state.
 
         """
         header = transaction.header
@@ -82,14 +53,14 @@ class IoTTransactionHandler(TransactionHandler):
         if timestamp > time.time():
             LOGGER.error('Received a timestamp of {} that ocurs in the future'.format(time.strftime(
                 "%a, %d %b %Y %H:%M:%S +0000", time.localtime(timestamp))))
-            return
+            raise InvalidTransaction('Invalid timestamp')
 
         if not self._validate_txn(device_type, value):
             LOGGER.error('Value of {} for {} on device {} failed validation'.format(
                 value, device_type, device_id))
-            return
+            raise InvalidTransaction('Invalid reading')
 
-        address = _get_address(device_id, from_key)
+        address = hf.get_address(FAMILY_NAME, device_id, from_key)
         self._set_state(address, transaction.payload, context)
 
     def _decode_unpack_txn(self, payload):
@@ -98,7 +69,7 @@ class IoTTransactionHandler(TransactionHandler):
         Args:
             payload: The transaction payload.
         Returns:
-            timestamp, device_id, device_type, value
+            timestamp: device_id, device_type, value
         """
         try:
             content = cbor.loads(payload)
@@ -125,12 +96,12 @@ class IoTTransactionHandler(TransactionHandler):
             pass
 
     def _set_state(self, address, state_data, context):
-        """ Stores state on the blockchain.
+        """ Sets state on the blockchain.
 
         Args:
             address: The merkle tree namespace to store state.
             state_data: The data that will be stroed in state.
-            context:
+            context: An interface for setting, getting and deleting a validator state.
         """
         context.set_state({address: state_data})
 
@@ -140,7 +111,7 @@ def main():
     """
     try:
         processor = TransactionProcessor(VALIDATOR_ADDRESS)
-        ns_prefix = _hash(FAMILY_NAME.encode('utf-8'))[0:6]
+        ns_prefix = hf.hash(FAMILY_NAME.encode('utf-8'))[0:6]
         handler = IoTTransactionHandler(ns_prefix)
         processor.add_handler(handler)
         LOGGER.info('{} transaction processor started on {}'.format(

@@ -5,6 +5,7 @@ import cbor
 import requests
 
 import base_logger
+import helper_functions as hf
 
 from sawtooth_signing import ParseError
 from sawtooth_signing.secp256k1 import Secp256k1PrivateKey
@@ -21,33 +22,6 @@ from sawtooth_sdk.protobuf.batch_pb2 import Batch
 # Test adding more transactions to a batch
 FAMILY_NAME = 'IoT-data'
 LOGGER = base_logger.get_logger(__name__)
-
-
-def _hash(data):
-    """ Compute the SHA-512 hash and return the result as hex characters.
-
-    Args:
-        data: The data to be hashed.
-    Returns:
-        Hex characters of hashed data.
-    """
-    return hashlib.sha512(data).hexdigest()
-
-
-def _get_address(device_id, public_key):
-    """ Returns namespace address for storing state on merkle tree. Derived
-    from hashes of family name, device_id, and public key.
-
-    Args:
-        device_id: The IoT devive id.
-        public_key: Public key of the IoT client.
-    Returns:
-        A 70 character address of the merkle namespace.
-    """
-    return _hash(FAMILY_NAME.encode('utf-8'))[:6] + \
-        _hash(device_id.encode('utf-8'))[:4] + \
-        _hash(public_key.encode('utf-8'))[:60]
-
 
 class IoTClient():
     """ Send IoT device transactions to Transaction Processor.
@@ -77,7 +51,7 @@ class IoTClient():
         self._signer = CryptoFactory(create_context(
             'secp256k1')).new_signer(private_key)
         self._public_key = self._signer.get_public_key().as_hex()
-        self._address = _get_address(device_id, self._public_key)
+        self._address = hf.get_address(FAMILY_NAME, device_id, self._public_key)
 
     def post(self, payload):
         """ Posts IoT Batch list to REST API.
@@ -98,7 +72,7 @@ class IoTClient():
     def get(self):
         """ Gets current state payload from REST API.
         """
-        return self._send_to_rest_api('GET', 'batches')
+        return self._send_to_rest_api('GET', 'state')
 
     def _send_to_rest_api(self, method, suffix, data=None):
         """ Sends a POST or GET HTTP request to the Sawtooth REST API.
@@ -117,7 +91,7 @@ class IoTClient():
             if method == 'POST':
                 result = requests.post(url, headers=headers, data=data)
             elif method == 'GET':
-                result = requests.get(url, headers=headers)
+                result = requests.get('{url}/{}'.format(self._address), headers=headers)
 
             if not result.ok:
                 LOGGER.error('Transaction received a {} status code'.format(
