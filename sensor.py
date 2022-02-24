@@ -32,7 +32,7 @@ class Sensor():
         Returns:
             Current sensor value.
         """
-        return random.randint(-15, 40)  # read the sensor value
+        return 22#random.randint(-15, 40)  # read the sensor value
 
     def _get_timestamp(self):
         """ Timestamp for sesnor reading.

@@ -6,7 +6,7 @@
 # # Install curl
 # sudo apt-get install curl
 
-# # Install influx DB
+# # Install Influx DB
 # sudo curl -sL https://repos.influxdata.com/influxdb.key | sudo apt-key add -
 # sudo echo "deb https://repos.influxdata.com/ubuntu bionic stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
 # sudo apt update
@@ -66,11 +66,11 @@
 # # Generate validator key
 # sudo sawadm keygen
 
+# ================ COMMENT EITHER DEVMODE OR POET FROM SELECTION ================ #
+
 # # Create the Genesis Block
 # cd /tmp
 # sawset genesis --key $HOME/.sawtooth/keys/$user.priv -o config-genesis.batch
-
-# ================ COMMENT EITHER DEVMODE OR POET FROM SELECTION ================ #
 
 # ==================================== POET ===================================== #
 
@@ -108,26 +108,37 @@
 # # Combine the separate Devmode batches into a single genesis batch 
 # sudo -u sawtooth sawadm genesis config-genesis.batch config.batch
 
+# ===================================== PBFT ===================================== #
+
+# sawset proposal create --key $HOME/.sawtooth/keys/my_key.priv \
+# -o config-consensus.batch \
+# sawtooth.consensus.algorithm.name=pbft \
+# sawtooth.consensus.algorithm.version=1.0 \
+# sawtooth.consensus.pbft.members='["VAL1KEY","VAL2KEY",...,"VALnKEY"]'
+
+# sudo -u sawtooth sawadm genesis \
+# config-genesis.batch config-consensus.batch pbft-settings.batch
+
 # =============================== START PROCESSES =============================== #
 
-# Start the validator
-sudo -u sawtooth sawtooth-validator \
---bind component:tcp://192.168.0.164:4004 \
---bind network:tcp://192.168.0.164:8800 \
---bind consensus:tcp://192.168.0.164:5050 \
---endpoint tcp://192.168.0.164:8800 -vv
+# # Start the validator
+# sudo -u sawtooth sawtooth-validator \
+# --bind component:tcp://192.168.0.164:4004 \
+# --bind network:tcp://192.168.0.164:8800 \
+# --bind consensus:tcp://192.168.0.164:5050 \
+# --endpoint tcp://192.168.0.164:8800 -vv
 
-# Start the Rest API
-sudo -u sawtooth sawtooth-rest-api -vv -B 192.168.0.164:8008 --connect tcp://192.168.0.164:4004
+# # Start the Rest API
+# sudo -u sawtooth sawtooth-rest-api -vv -B 192.168.0.164:8008 --connect tcp://192.168.0.164:4004
 
-# Start the settings tp
-sudo -u sawtooth settings-tp -vv --connect tcp://192.168.0.164:4004
+# # Start the settings tp
+# sudo -u sawtooth settings-tp -vv --connect tcp://192.168.0.164:4004
 
-# start the PoET Validator Registry transaction processor
-sudo -u sawtooth poet-validator-registry-tp -vv
+# # start the PoET Validator Registry transaction processor
+# sudo -u sawtooth poet-validator-registry-tp -vv
 
-# Start PoET consensus engine
-sudo -u sawtooth poet-engine -vv
+# # Start PoET consensus engine
+# sudo -u sawtooth poet-engine -vv
 
-# start the Devmode Validator Registry transaction processor
-sudo -u sawtooth devmode-engine-rust -vv --connect tcp://192.168.0.164:5050
+# # start the Devmode Validator Registry transaction processor
+# sudo -u sawtooth devmode-engine-rust -vv --connect tcp://192.168.0.164:5050
