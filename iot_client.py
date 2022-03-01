@@ -30,20 +30,20 @@ class IoTClient():
     def __init__(self, base_url, device_id, key_file=None):
         self.base_url = base_url
 
-        # if key_file is None:
-        #     self._signer = None
-        #     return
-
-        # try:
-        #     with open(key_file) as key_fd:
-        #         private_key_str = key_fd.read().strip()
-        # except OSError as err:
-        #     LOGGER.error('Unable to get private key from file. {}'.format(err))
-        #     raise Exception(err)
+        if key_file is None:
+            self._signer = None
+            return
 
         try:
-            #private_key = Secp256k1PrivateKey.from_hex(private_key_str)
-            private_key = create_context('secp256k1').new_random_private_key()
+            with open(key_file) as key_fd:
+                private_key_str = key_fd.read().strip()
+        except OSError as err:
+            LOGGER.error('Unable to get private key from file. {}'.format(err))
+            raise Exception(err)
+
+        try:
+            private_key = Secp256k1PrivateKey.from_hex(private_key_str)
+            #private_key = create_context('secp256k1').new_random_private_key()
         except ParseError as err:
             LOGGER.error('Unable to parse private key. {}'.format(err))
             raise Exception(err)

@@ -9,7 +9,7 @@ from sawtooth_sdk.processor.handler import TransactionHandler
 from sawtooth_sdk.processor.exceptions import InvalidTransaction
 
 
-VALIDATOR_ADDRESS = 'tcp://192.168.0.221:4004'
+VALIDATOR_ADDRESS = 'tcp://127.0.0.1:4004'
 FAMILY_NAME = 'IoT-data'
 VERSION = '1.0'
 

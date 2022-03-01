@@ -10,7 +10,7 @@ from sensor import Sensor
 from iot_client import IoTClient
 
 
-DEFAULT_URL = 'http://192.168.0.222:8008'
+DEFAULT_URL = 'http://192.168.0.165:8008'
 
 LOGGER = base_logger.get_logger(__name__)
 
@@ -21,7 +21,6 @@ def _get_private_keyfile():
         A string representing the private key filepath.
     """
     hostname = socket.gethostname()
-    #print(hostname)
     home = os.path.expanduser("~")
     key_dir = os.path.join(home, ".sawtooth", "keys")
     return '{}/{}.priv'.format(key_dir, hostname)
@@ -35,7 +34,7 @@ def do_post(device, interval):
         device: An IoT device object.      
         interval: The interval for updating values on the blockchain.
     """
-    key_file = ''#_get_private_keyfile()
+    key_file = _get_private_keyfile()
     client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
     loop = True
     while loop:
@@ -54,7 +53,7 @@ def do_get(device):
     Args:
         device: An IoT device object.
     """
-    key_file = ''#_get_private_keyfile()
+    key_file = _get_private_keyfile()
     client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
     response = client.get()
     print(response)

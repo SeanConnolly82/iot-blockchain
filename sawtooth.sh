@@ -1,4 +1,4 @@
-# ===========================  INSTALL OTHER COMPONENTS ========================= #
+# ================================  INSTALL OTHER COMPONENTS ============================== #
 
 # # Install GIT
 # sudo apt-get install git
@@ -24,7 +24,7 @@
 # USE metrics;
 # CREATE USER 'lrdata' WITH PASSWORD 'Edge' WITH ALL PRIVILEGES;
 
-# =========================  INSTALL SAWTOOTH COMPONENTS ======================== #
+# ==============================  INSTALL SAWTOOTH COMPONENTS ============================= #
 
 # # Add stable Sawtooth repository
 # sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8AA7AF1F1091A5FD
@@ -66,13 +66,13 @@
 # # Generate validator key
 # sudo sawadm keygen
 
-# ================ COMMENT EITHER DEVMODE OR POET FROM SELECTION ================ #
+# ===================== COMMENT EITHER DEVMODE OR POET FROM SELECTION ===================== #
 
 # # Create the Genesis Block
 # cd /tmp
 # sawset genesis --key $HOME/.sawtooth/keys/$user.priv -o config-genesis.batch
 
-# ==================================== POET ===================================== #
+# ========================================= POET ========================================== #
 
 # # Initialize the PoET consensus engine
 # sawset proposal create --key $HOME/.sawtooth/keys/$user.priv \
@@ -97,7 +97,7 @@
 # sudo -u sawtooth sawadm genesis \
 # config-genesis.batch config-consensus.batch poet.batch poet-settings.batch
 
-# =================================== DEVMODE =================================== #
+# ======================================== DEVMODE ======================================== #
 
 # # Initialize the Devmode consensus engine
 # sawset proposal create \
@@ -108,7 +108,7 @@
 # # Combine the separate Devmode batches into a single genesis batch 
 # sudo -u sawtooth sawadm genesis config-genesis.batch config.batch
 
-# ===================================== PBFT ===================================== #
+# ========================================== PBFT ========================================== #
 
 # sawset proposal create --key $HOME/.sawtooth/keys/my_key.priv \
 # -o config-consensus.batch \
@@ -119,7 +119,7 @@
 # sudo -u sawtooth sawadm genesis \
 # config-genesis.batch config-consensus.batch pbft-settings.batch
 
-# =============================== START PROCESSES =============================== #
+# ==================================== START PROCESSES ===================================== #
 
 # # Start the validator
 # sudo -u sawtooth sawtooth-validator \
@@ -142,3 +142,19 @@
 
 # # start the Devmode Validator Registry transaction processor
 # sudo -u sawtooth devmode-engine-rust -vv --connect tcp://192.168.0.164:5050
+
+# =================================== START/STOP SERVICES ================================== #
+
+# # Start the Sawtooth services
+# sudo systemctl start sawtooth-rest-api.service
+# sudo systemctl start sawtooth-validator.service
+# sudo systemctl start sawtooth-settings-tp.service
+# sudo systemctl start sawtooth-poet-validator-registry-tp.service
+# sudo systemctl start sawtooth-poet-engine.service
+
+# # Stop the Sawtooth services
+# sudo systemctl stop sawtooth-rest-api.service
+# sudo systemctl stop sawtooth-validator.service
+# sudo systemctl stop sawtooth-settings-tp.service
+# sudo systemctl stop sawtooth-poet-validator-registry-tp.service
+# sudo systemctl stop sawtooth-poet-engine.service
