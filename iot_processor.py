@@ -42,7 +42,6 @@ class IoTTransactionHandler(TransactionHandler):
         args:
             transaction: An IoT-data transaction.
             context: An interface for setting, getting, and deleting a validator state.
-
         """
         header = transaction.header
         from_key = header.signer_public_key

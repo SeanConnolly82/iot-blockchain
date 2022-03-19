@@ -35,11 +35,11 @@ def do_post(device, interval):
         interval: The interval for updating values on the blockchain.
     """
     key_file = _get_private_keyfile()
-    client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
+    #client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
     loop = True
     while loop:
         device.get_values()
-        print(client.post(device.payload))
+        #print(client.post(device.payload))
         if interval:
             time.sleep(interval)
         else:

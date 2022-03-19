@@ -3,3 +3,4 @@ colorlog
 sawtooth_sdk==1.2.3
 requests
 cbor
+smbus

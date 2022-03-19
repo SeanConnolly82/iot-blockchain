@@ -1,4 +1,5 @@
 import logging
+
 from colorlog import ColoredFormatter
 
 def _get_console_handler():

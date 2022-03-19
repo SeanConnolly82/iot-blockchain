@@ -1,4 +1,4 @@
 *.log
-iot-client
+iot-client*
 __pycache__
 keys

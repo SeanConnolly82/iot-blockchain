@@ -22,7 +22,7 @@
 # influx
 # CREATE DATABASE metrics;
 # USE metrics;
-# CREATE USER 'lrdata' WITH PASSWORD 'Edge' WITH ALL PRIVILEGES;
+# CREATE USER lrdata WITH PASSWORD 'Edge' WITH ALL PRIVILEGES;
 
 # ==============================  INSTALL SAWTOOTH COMPONENTS ============================= #
 
@@ -39,6 +39,9 @@
 # python3-sawtooth-poet-cli \
 # python3-sawtooth-poet-engine \
 # python3-sawtooth-poet-families
+
+# # Install the Sawtooth PBFT consensus engine package
+# sudo apt-get install -y sawtooth sawtooth-pbft-engine
 
 # # Install the Sawtooth Devmode consensus engine package
 # sudo apt-get install sawtooth-devmode-engine-rust
@@ -119,20 +122,42 @@
 # sudo -u sawtooth sawadm genesis \
 # config-genesis.batch config-consensus.batch pbft-settings.batch
 
+# ================================== TRANSACTOR POLICY ===================================== #
+
+# # Generate a user key for the Raspberry Pi
+# sawtooth keygen raspberrypi
+
+# # Add public key to the list of those allowed to change settings
+# sudo sawset proposal create --key ~/.sawtooth/keys/$user.priv   
+#  sawtooth.identity.allowed_keys=$(cat ~/.sawtooth/keys/$user.pub) --url http://192.168.0.165:8008
+
+# # Create an IoT Policy with the approved public keys including the Raspberry Pi key
+# sawtooth identity policy create iot_policy \
+#  "PERMIT_KEY $(cat ~/.sawtooth/keys/raspberrypi.pub)" \ 
+#  "PERMIT_KEY $(cat ~/.sawtooth/keys/$user.pub)" \
+#  "DENY_KEY *" --key ~/.sawtooth/keys/$user.priv --url http://192.168.0.165:8008
+
+# # Assign the IoT Policy to the transactor role
+# sawtooth identity role create transactor iot_policy \
+#  --key ~/.sawtooth/keys/$user.priv --url http://192.168.0.165:8008
+
 # ==================================== START PROCESSES ===================================== #
 
 # # Start the validator
 # sudo -u sawtooth sawtooth-validator \
-# --bind component:tcp://192.168.0.164:4004 \
+# --bind component:tcp://127.0.0.1:4004 \
 # --bind network:tcp://192.168.0.164:8800 \
 # --bind consensus:tcp://192.168.0.164:5050 \
 # --endpoint tcp://192.168.0.164:8800 -vv
 
 # # Start the Rest API
-# sudo -u sawtooth sawtooth-rest-api -vv -B 192.168.0.164:8008 --connect tcp://192.168.0.164:4004
+# sudo -u sawtooth sawtooth-rest-api -vv -B 192.168.0.164:8008
 
 # # Start the settings tp
-# sudo -u sawtooth settings-tp -vv --connect tcp://192.168.0.164:4004
+# sudo -u sawtooth settings-tp -vv
+
+# # Start the identity tp
+# identity-tp -v
 
 # # start the PoET Validator Registry transaction processor
 # sudo -u sawtooth poet-validator-registry-tp -vv

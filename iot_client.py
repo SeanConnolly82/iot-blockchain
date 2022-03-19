@@ -19,7 +19,6 @@ from sawtooth_sdk.protobuf.batch_pb2 import BatchList
 from sawtooth_sdk.protobuf.batch_pb2 import Batch
 
 
-# Test adding more transactions to a batch
 FAMILY_NAME = 'IoT-data'
 LOGGER = base_logger.get_logger(__name__)
 
