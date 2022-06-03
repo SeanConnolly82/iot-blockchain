@@ -1,10 +1,10 @@
 # assign name for virtual environment
-env=iot-client-TEST
+env=iot-client
 # initialise the command line arguments
 method=post
 device_id=TEMP001
 device_type=temp
-interval=1
+interval=10
 # set up and install the virtual environment
 python3 -m venv $env
 source $env/bin/activate

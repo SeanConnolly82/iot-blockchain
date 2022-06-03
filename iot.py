@@ -9,10 +9,8 @@ import base_logger
 from sensor import Sensor
 from iot_client import IoTClient
 
-
-DEFAULT_URL = 'http://192.168.0.165:8008'
-
 LOGGER = base_logger.get_logger(__name__)
+COUNTER = 0
 
 def _get_private_keyfile():
     """ Gets private key filepath.
@@ -22,7 +20,7 @@ def _get_private_keyfile():
     """
     hostname = socket.gethostname()
     home = os.path.expanduser("~")
-    key_dir = os.path.join(home, ".sawtooth", "keys")
+    key_dir = os.path.join(home, "Documents","Sawtooth","iot-blockchain","keys")
     return '{}/{}.priv'.format(key_dir, hostname)
 
 
@@ -34,12 +32,17 @@ def do_post(device, interval):
         device: An IoT device object.      
         interval: The interval for updating values on the blockchain.
     """
+    global COUNTER
     key_file = _get_private_keyfile()
-    #client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
+    client = IoTClient(device.payload['device_id'], key_file)
     loop = True
     while loop:
         device.get_values()
-        #print(client.post(device.payload))
+        COUNTER = COUNTER + 1
+        client.post(device.payload)
+        # if COUNTER == 20:
+        #     LOGGER.info('{} transactions posted.'.format(COUNTER))
+        #     return
         if interval:
             time.sleep(interval)
         else:
@@ -54,7 +57,7 @@ def do_get(device):
         device: An IoT device object.
     """
     key_file = _get_private_keyfile()
-    client = IoTClient(DEFAULT_URL, device.payload['device_id'], key_file)
+    client = IoTClient(device.payload['device_id'], key_file)
     response = client.get()
     print(response)
 
@@ -94,7 +97,7 @@ def main():
             LOGGER.info('Created a {} device with id {}'.format(device.payload['device_type'], device.payload['device_id']))
             do_post(device, args.interval)
     except KeyboardInterrupt:
-        LOGGER.warn('Keyboard interrupt')
+        LOGGER.info('Keyboard interrupted. {} transactions posted.'.format(COUNTER))
     except Exception as err:
         print(err)
         sys.exit(1)

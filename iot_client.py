@@ -1,8 +1,8 @@
 import hashlib
 import random
-
 import cbor
 import requests
+
 
 import base_logger
 import helper_functions as hf
@@ -18,28 +18,24 @@ from sawtooth_sdk.protobuf.batch_pb2 import BatchHeader
 from sawtooth_sdk.protobuf.batch_pb2 import BatchList
 from sawtooth_sdk.protobuf.batch_pb2 import Batch
 
-
+REST_API_URL = ['http://192.168.0.165:8008','http://192.168.0.81:8008','http://192.168.0.228:8008']
 FAMILY_NAME = 'IoT-data'
+
 LOGGER = base_logger.get_logger(__name__)
 
 class IoTClient():
     """ Send IoT device transactions to Transaction Processor.
     """
-
-    def __init__(self, base_url, device_id, key_file=None):
-        self.base_url = base_url
-
+    def __init__(self, device_id, key_file=None):
         if key_file is None:
             self._signer = None
             return
-
         try:
             with open(key_file) as key_fd:
                 private_key_str = key_fd.read().strip()
         except OSError as err:
             LOGGER.error('Unable to get private key from file. {}'.format(err))
             raise Exception(err)
-
         try:
             private_key = Secp256k1PrivateKey.from_hex(private_key_str)
             #private_key = create_context('secp256k1').new_random_private_key()
@@ -51,6 +47,7 @@ class IoTClient():
             'secp256k1')).new_signer(private_key)
         self._public_key = self._signer.get_public_key().as_hex()
         self._address = hf.get_address(FAMILY_NAME, device_id, self._public_key)
+        self._txn_list = []
 
     def post(self, payload):
         """ Posts IoT Batch list to REST API.
@@ -65,8 +62,12 @@ class IoTClient():
             raise TypeError
                 
         payload_bytes = cbor.dumps(payload)
-        batches = self._create_batch_list(payload_bytes)
-        return self._send_to_rest_api('POST', 'batches', batches)
+        txn = self._create_txn(payload_bytes)
+        self._txn_list.append(txn)
+        if len(self._txn_list) == 10:
+            batches = self._create_batch_list()
+            self._txn_list = []
+            return self._send_to_rest_api('POST', 'batches', batches)
 
     def get(self):
         """ Gets current state payload from REST API.
@@ -86,7 +87,7 @@ class IoTClient():
         Returns:
             The API response text.
         """
-        url = '{}/{}'.format(self.base_url, suffix)
+        url = '{}/{}'.format(REST_API_URL[random.randint(0,2)], suffix)
         headers = {'Content-Type': 'application/octet-stream'}
 
         try:
@@ -101,8 +102,8 @@ class IoTClient():
                 raise Exception("Error {}: {}".format(
                     result.status_code, result.reason))
             else:
-                LOGGER.info('Transaction received a {} status code'.format(
-                    result.status_code))
+                LOGGER.info('Transaction received a {} status code. {}'.format(
+                    result.status_code, result.text))
 
         except requests.ConnectionError as err:
             LOGGER.error('Failed to connect to {}: {}'.format(url, str(err)))
@@ -110,15 +111,13 @@ class IoTClient():
         except Exception as err:
             raise Exception(err)
 
-        return result.text
-
-    def _create_txn_list(self, payload):
+    def _create_txn(self, payload):
         """ Adds the IoT payload to a transaction with a header.
 
         Args:
             payload: The IoT device payload.
         Returns:
-            [txn]: A list of transactions.
+            txn: A Sawtooth transactions.
         """
         txn_header = TransactionHeader(
             family_name=FAMILY_NAME,
@@ -137,25 +136,22 @@ class IoTClient():
             payload=payload,
             header_signature=self._signer.sign(txn_header)
         )
-        return [txn]
+        return txn
 
-    def _create_batch_list(self, payload):
+    def _create_batch_list(self):
         """ Creates a list of batches containing the IoT transactions.
 
-        Args:
-            payload: The IoT device payload.
         Returns:
             A serialised list of batches
         """
-        txns = self._create_txn_list(payload)
         batch_header = BatchHeader(
             signer_public_key=self._public_key,
-            transaction_ids=[txn.header_signature for txn in txns],
+            transaction_ids=[txn.header_signature for txn in self._txn_list],
         ).SerializeToString()
 
         batch = Batch(
             header=batch_header,
             header_signature=self._signer.sign(batch_header),
-            transactions=txns
+            transactions=self._txn_list
         )
         return BatchList(batches=[batch]).SerializeToString()

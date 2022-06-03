@@ -42,6 +42,7 @@ class IoTTransactionHandler(TransactionHandler):
         args:
             transaction: An IoT-data transaction.
             context: An interface for setting, getting, and deleting a validator state.
+
         """
         header = transaction.header
         from_key = header.signer_public_key
@@ -49,18 +50,20 @@ class IoTTransactionHandler(TransactionHandler):
         timestamp, device_id, device_type, value = self._decode_unpack_txn(
             transaction.payload)
 
-        if timestamp > time.time():
-            LOGGER.error('Received a timestamp of {} that ocurs in the future'.format(time.strftime(
-                "%a, %d %b %Y %H:%M:%S +0000", time.localtime(timestamp))))
-            raise InvalidTransaction('Invalid timestamp')
+        # if timestamp > time.time():
+        #     LOGGER.error('Received a timestamp of {} that ocurs in the future'.format(time.strftime(
+        #         "%a, %d %b %Y %H:%M:%S +0000", time.localtime(timestamp))))
+        #     raise InvalidTransaction('Invalid timestamp')
 
         if not self._validate_txn(device_type, value):
             LOGGER.error('Value of {} for {} on device {} failed validation'.format(
                 value, device_type, device_id))
             raise InvalidTransaction('Invalid reading')
 
+        state_data = str(value).encode('utf-8')
         address = hf.get_address(FAMILY_NAME, device_id, from_key)
-        self._set_state(address, transaction.payload, context)
+        self._set_state(address, state_data, context)
+        LOGGER.info("Value: {} stored in state".format(value))
 
     def _decode_unpack_txn(self, payload):
         """ Decodes the CBOR encoded payload and unpacks the contents.
